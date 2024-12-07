@@ -17,21 +17,6 @@ exports.signupSchema = Joi.object({
     ),
 });
 
-exports.signinSchema = Joi.object({
-    email: Joi.string()
-      .min(6)
-      .max(60)
-      .required()
-      .email({
-        tlds: { allow: ["com", "net"] },
-      }),
-    password: Joi.string()
-      .required()
-      .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$"))
-      .message(
-        "La contraseña debe contener al menos una letra minúscula, una letra mayúscula, un número  y tener una longitud mínima de 8 caracteres"
-      ),
-});
 
 exports.insertBookSchema = Joi.object({
   userId: Joi.string()
