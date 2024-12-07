@@ -16,7 +16,11 @@ const authRouter = require('./routers/authRouter')
 const bookRouter = require('./routers/bookRouter')
 const reviewRouter = require('./routers/reviewRouter')
 const app = express()
-app.use(cors())
+app.use(cors({
+    origin: 'http://localhost:3000', // Reemplaza con la URL de tu frontend
+    credentials: true, // Esto permite enviar cookies (como el token en las cookies)
+  }));
+
 app.use(helmet())
 app.use(cookieParser())
 app.use(express.json())
