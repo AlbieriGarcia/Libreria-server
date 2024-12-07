@@ -52,7 +52,7 @@ exports.signin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-
+    
     const existingUser = await User.findOne({ email }).select("+password");
 
     if (!existingUser) {
@@ -90,7 +90,7 @@ exports.signin = async (req, res) => {
         expires: new Date(Date.now() + 8 * 3600000),
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: 'lax',
+        sameSite: "lax",
       })
       .json({
         success: true,
@@ -109,3 +109,23 @@ exports.signout = async (req, res) => {
     .json({ success: true, message: "Te has deslogeado exitosamente!" });
 };
 
+exports.verifyToken = async (req, res) => {
+  let token  = req.headers.authorization;
+
+  try {
+    const userToken = token.split(" ")[1]; // toma el token despues del Bearer
+    const jwtVerified = jwt.verify(userToken, process.env.TOKEN_SECRET);
+
+    if (jwtVerified) {
+      res.json({ success: true, message: "Autenticado" });
+    } else {
+      throw new Error("No estas autenticado");
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Ocurrio un error al verificar el token, el token pudo ser alterado.",
+    });
+  }
+};
