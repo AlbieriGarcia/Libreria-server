@@ -25,14 +25,23 @@ exports.insertBookSchema = Joi.object({
   title: Joi.string()
     .min(1)
     .max(120)
+    .message(
+      "El titulo no cuenta con los caracteres correctos"
+    )
     .required(),
     
   descripcion: Joi.string()
-  .max(1000),
+  .max(1000)
+  .message(
+    "La descripcion es muy larga"
+  ),
 
   author: Joi.string()
     .min(1)
     .max(120)
+    .message(
+      "El nombre del autor no cuenta con los caracteres correctos"
+    )
     .required(),
 
   year: Joi.number()
