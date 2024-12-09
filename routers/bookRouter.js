@@ -4,6 +4,7 @@ const { identifier } = require('../middlewares/identification');
 const router = express.Router();
  
 router.post('/getBooks', bookController.getBooks);
+router.post('/getMyBooks', identifier, bookController.getMyBooks);
 router.get('/getBookById', bookController.getBookById);
 router.get('/getGenres', bookController.getGenres);
 router.get('/getAuthors', bookController.getAuthors);

@@ -51,6 +51,54 @@ exports.getBooks = async (req, res) => {
   }
 };
 
+exports.getMyBooks = async (req, res) => {
+  const { page } = req.query;
+  const { title, genre, year, author } = req.body;
+  const { userId } = req.user;
+
+  const booksPerPage = 6;
+
+  try {
+    let pageNum = 0;
+    if (page <= 1) {
+      pageNum = 0;
+    } else {
+      pageNum = page - 1;
+    }
+
+    const filter = {};
+
+    if (title) {
+      filter.title = { $regex: title, $options: "i" };
+    }
+
+    if (genre) {
+      filter.genre = { $regex: genre, $options: "i" };
+    }
+
+    if (year) {
+      filter.year = year;
+    }
+
+    if (author) {
+      filter.author = { $regex: author, $options: "i" };
+    }
+
+    const result = await Book.find({ userId, ...filter })
+      .sort({ createdAt: -1 })
+      .skip(pageNum * booksPerPage)
+      .limit(booksPerPage)
+      .populate({
+        path: "userId",
+        select: ["email", "username"],
+      });
+
+    res.status(200).json({ success: true, message: "books", data: result });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 exports.getBookById = async (req, res) => {
   const { _id } = req.query;
 
