@@ -42,7 +42,7 @@ exports.getBooks = async (req, res) => {
       .limit(booksPerPage)
       .populate({
         path: "userId",
-        select: "email",
+        select: ["email", "username"],
       });
 
     res.status(200).json({ success: true, message: "books", data: result });
@@ -57,7 +57,7 @@ exports.getBookById = async (req, res) => {
   try {
     const result = await Book.findOne({ _id }).populate({
       path: "userId",
-      select: "email",
+      select: ["email", "username"],     
     });
 
     const isBookExists = await Book.findOne({ _id });
@@ -71,6 +71,45 @@ exports.getBookById = async (req, res) => {
     res
       .status(200)
       .json({ success: true, message: "book by id", data: result });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.getGenres = async (req, res) => {
+
+  try {
+    const result = await Book.distinct("genre")
+
+    res
+      .status(200)
+      .json({ success: true, message: "Genres", data: result });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.getAuthors = async (req, res) => {
+
+  try {
+    const result = await Book.distinct("author")
+
+    res
+      .status(200)
+      .json({ success: true, message: "Authors", data: result });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.getYears = async (req, res) => {
+
+  try {
+    const result = await Book.distinct("year")
+
+    res
+      .status(200)
+      .json({ success: true, message: "Years", data: result });
   } catch (error) {
     console.log(error);
   }
