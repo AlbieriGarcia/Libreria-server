@@ -53,8 +53,6 @@ exports.insertBookSchema = Joi.object({
     .required(),
 
   coverImage: Joi.string(),
-    
-  rating: Joi.number(),
 
   isFavorite: Joi.boolean(),
   

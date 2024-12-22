@@ -105,7 +105,7 @@ exports.getBookById = async (req, res) => {
   try {
     const result = await Book.findOne({ _id }).populate({
       path: "userId",
-      select: ["email", "username"],     
+      select: ["email", "username"],
     });
 
     const isBookExists = await Book.findOne({ _id });
@@ -125,55 +125,38 @@ exports.getBookById = async (req, res) => {
 };
 
 exports.getGenres = async (req, res) => {
-
   try {
-    const result = await Book.distinct("genre")
+    const result = await Book.distinct("genre");
 
-    res
-      .status(200)
-      .json({ success: true, message: "Genres", data: result });
+    res.status(200).json({ success: true, message: "Genres", data: result });
   } catch (error) {
     console.log(error);
   }
 };
 
 exports.getAuthors = async (req, res) => {
-
   try {
-    const result = await Book.distinct("author")
+    const result = await Book.distinct("author");
 
-    res
-      .status(200)
-      .json({ success: true, message: "Authors", data: result });
+    res.status(200).json({ success: true, message: "Authors", data: result });
   } catch (error) {
     console.log(error);
   }
 };
 
 exports.getYears = async (req, res) => {
-
   try {
-    const result = await Book.distinct("year")
+    const result = await Book.distinct("year");
 
-    res
-      .status(200)
-      .json({ success: true, message: "Years", data: result });
+    res.status(200).json({ success: true, message: "Years", data: result });
   } catch (error) {
     console.log(error);
   }
 };
 
 exports.insertBook = async (req, res) => {
-  const {
-    title,
-    descripcion,
-    author,
-    year,
-    genre,
-    coverImage,
-    rating,
-    isFavorite,
-  } = req.body;
+  const { title, descripcion, author, year, genre, coverImage, isFavorite } =
+    req.body;
 
   const { userId } = req.user;
 
@@ -186,7 +169,6 @@ exports.insertBook = async (req, res) => {
       year,
       genre,
       coverImage,
-      rating,
       isFavorite,
     });
 
@@ -203,8 +185,8 @@ exports.insertBook = async (req, res) => {
       author,
       year,
       genre,
+      rating: 0,
       coverImage,
-      rating,
       isFavorite,
     });
 
@@ -226,7 +208,7 @@ exports.setFavorite = async (req, res) => {
   const { userId } = req.user;
 
   try {
-    const { error, value } = setFavoriteSchema.validate({isFavorite});
+    const { error, value } = setFavoriteSchema.validate({ isFavorite });
 
     if (error) {
       return res
@@ -251,7 +233,7 @@ exports.setFavorite = async (req, res) => {
 
     existingBook.isFavorite = isFavorite;
 
-    const result = await existingBook.updateOne({isFavorite});
+    const result = await existingBook.updateOne({ isFavorite });
 
     res.status(200).json({
       success: true,
@@ -266,16 +248,8 @@ exports.setFavorite = async (req, res) => {
 exports.updateBook = async (req, res) => {
   const { _id } = req.query;
 
-  const {
-    title,
-    descripcion,
-    author,
-    year,
-    genre,
-    coverImage,
-    rating,
-    isFavorite,
-  } = req.body;
+  const { title, descripcion, author, year, genre, coverImage, isFavorite } =
+    req.body;
 
   const { userId } = req.user;
 
@@ -288,7 +262,6 @@ exports.updateBook = async (req, res) => {
       year,
       genre,
       coverImage,
-      rating,
       isFavorite,
     });
 
@@ -319,7 +292,6 @@ exports.updateBook = async (req, res) => {
     existingBook.year = year;
     existingBook.genre = genre;
     existingBook.coverImage = coverImage;
-    existingBook.rating = rating;
     existingBook.isFavorite = isFavorite;
 
     const result = await existingBook.save();

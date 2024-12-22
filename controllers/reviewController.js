@@ -1,6 +1,7 @@
 const Review = require("../models/reviewModel");
 const Book = require("../models/booksModel");
 const { insertReviewSchema } = require("../middlewares/validator");
+const { calculateRating } = require("../utils/calculateRating");
 
 exports.getReviews = async (req, res) => {
   const { bookId } = req.query;
@@ -76,6 +77,8 @@ exports.insertReview = async (req, res) => {
       wasEdited,
     });
 
+    calculateRating(result.bookId)
+
     res.status(201).json({
       success: true,
       message: "La Reseña se agrego exitosamente",
@@ -119,6 +122,8 @@ exports.updateReview = async (req, res) => {
     existingReview.wasEdited = true;
 
     const result = await existingReview.save();
+
+    calculateRating(result.bookId)
 
     res.status(201).json({
       success: true,
