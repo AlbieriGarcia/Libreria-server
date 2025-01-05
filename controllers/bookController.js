@@ -1,18 +1,19 @@
 const Book = require("../models/booksModel");
+const mongoose = require("mongoose");
 const {
   insertBookSchema,
-  setFavoriteSchema,
 } = require("../middlewares/validator");
 
 exports.getBooks = async (req, res) => {
   const { page } = req.query;
   const { title, genre, year, author } = req.body;
+  const { userId } = req.user;
 
   const booksPerPage = 6;
 
   try {
     let pageNum = 0;
-    if (page <= 1) {
+    if (page <= 1 || page == undefined) {
       pageNum = 0;
     } else {
       pageNum = page - 1;
@@ -36,14 +37,35 @@ exports.getBooks = async (req, res) => {
       filter.author = { $regex: author, $options: "i" };
     }
 
-    const result = await Book.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(pageNum * booksPerPage)
-      .limit(booksPerPage)
-      .populate({
-        path: "userId",
-        select: ["email", "username"],
-      });
+    const books = await Book.aggregate([
+      { $match: filter }, 
+      { $sort: { createdAt: -1 } }, 
+      { $skip: pageNum * booksPerPage },
+      { $limit: booksPerPage },
+      {
+        $lookup: {
+          from: "favorites", 
+          let: { bookId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ["$bookId", "$$bookId"] }, { $eq: ["$userId", mongoose.Types.ObjectId.createFromHexString(userId)] }] } } },
+            { $project: { _id: 1, isFavorite: 1, bookId: 1 } }, 
+          ],
+          as: "favorite", 
+        },
+      },
+      {
+        $unwind: {
+          path: "$favorite", 
+          preserveNullAndEmptyArrays: true, // Permite que el valor sea null si no existe favorito
+        },
+      },
+    ]);
+
+    const result = await Book.populate(books, {
+      path: "userId",
+      select: ["email", "username"],
+    });
+    
 
     res.status(200).json({ success: true, message: "books", data: result });
   } catch (error) {
@@ -155,7 +177,7 @@ exports.getYears = async (req, res) => {
 };
 
 exports.insertBook = async (req, res) => {
-  const { title, descripcion, author, year, genre, coverImage, isFavorite } =
+  const { title, descripcion, author, year, genre, coverImage } =
     req.body;
 
   const { userId } = req.user;
@@ -169,7 +191,6 @@ exports.insertBook = async (req, res) => {
       year,
       genre,
       coverImage,
-      isFavorite,
     });
 
     if (error) {
@@ -187,7 +208,6 @@ exports.insertBook = async (req, res) => {
       genre,
       rating: 0,
       coverImage,
-      isFavorite,
     });
 
     res.status(201).json({
@@ -200,55 +220,10 @@ exports.insertBook = async (req, res) => {
   }
 };
 
-exports.setFavorite = async (req, res) => {
-  const { _id } = req.query;
-
-  const { isFavorite } = req.body;
-
-  const { userId } = req.user;
-
-  try {
-    const { error, value } = setFavoriteSchema.validate({ isFavorite });
-
-    if (error) {
-      return res
-        .status(401)
-        .json({ success: false, message: error.details[0].message });
-    }
-
-    const existingBook = await Book.findOne({ _id });
-
-    if (!existingBook) {
-      return res
-        .status(404)
-        .json({ success: false, message: "El libro no existe" });
-    }
-
-    if (existingBook.userId.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "No tienes permiso",
-      });
-    }
-
-    existingBook.isFavorite = isFavorite;
-
-    const result = await existingBook.updateOne({ isFavorite });
-
-    res.status(200).json({
-      success: true,
-      message: "Estado de Favorito actualizado",
-      data: result,
-    });
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 exports.updateBook = async (req, res) => {
   const { _id } = req.query;
 
-  const { title, descripcion, author, year, genre, coverImage, isFavorite } =
+  const { title, descripcion, author, year, genre, coverImage } =
     req.body;
 
   const { userId } = req.user;
@@ -262,7 +237,6 @@ exports.updateBook = async (req, res) => {
       year,
       genre,
       coverImage,
-      isFavorite,
     });
 
     if (error) {
@@ -292,7 +266,6 @@ exports.updateBook = async (req, res) => {
     existingBook.year = year;
     existingBook.genre = genre;
     existingBook.coverImage = coverImage;
-    existingBook.isFavorite = isFavorite;
 
     const result = await existingBook.save();
 

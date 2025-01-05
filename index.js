@@ -15,10 +15,11 @@ mongoose
 const authRouter = require('./routers/authRouter')
 const bookRouter = require('./routers/bookRouter')
 const reviewRouter = require('./routers/reviewRouter')
+const favoritesRouter = require('./routers/favoritesRouter')
 const app = express()
 app.use(cors({
-    origin: 'http://localhost:3000', // Reemplaza con la URL de tu frontend
-    credentials: true, // Esto permite enviar cookies (como el token en las cookies)
+    origin: 'http://localhost:3000', 
+    credentials: true, 
   }));
 
 app.use(helmet())
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRouter)  
 app.use('/api/books', bookRouter)  
 app.use('/api/reviews', reviewRouter)  
+app.use('/api/favorites', favoritesRouter)  
 app.get('/', (req, res) => {
     res.json({message: "Hola desde el servidor"})
 })

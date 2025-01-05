@@ -39,16 +39,11 @@ const bookSchema = mongoose.Schema(
       min: [0, "La calificación no puede ser menor a 0"],
       max: [5, "La calificación no puede ser mayor a 5"],
     },
-    isFavorite: {
-      type: Boolean,
-      required: [true, "El campo 'isFavorite' es requerido"],
-      default: false,
-    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "El ID del usuario es requerido"],
       ref: "User",
-    },
+    }
   },
   {
     timestamps: true, 
