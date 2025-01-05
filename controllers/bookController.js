@@ -5,11 +5,11 @@ const {
 } = require("../middlewares/validator");
 
 exports.getBooks = async (req, res) => {
-  const { page } = req.query;
+  const { page, bookQt } = req.query;
   const { title, genre, year, author } = req.body;
   const { userId } = req.user;
 
-  const booksPerPage = 6;
+  const booksPerPage = Number(bookQt) ?? 8;
 
   try {
     let pageNum = 0;
@@ -36,6 +36,8 @@ exports.getBooks = async (req, res) => {
     if (author) {
       filter.author = { $regex: author, $options: "i" };
     }
+
+    const totalBooks = await Book.countDocuments();
 
     const books = await Book.aggregate([
       { $match: filter }, 
@@ -65,24 +67,30 @@ exports.getBooks = async (req, res) => {
       path: "userId",
       select: ["email", "username"],
     });
+
+    const pageData = {
+      currentPage: pageNum + 1,
+      totalPages: Math.ceil(totalBooks / booksPerPage),
+      totalBooks: totalBooks
+    }
     
 
-    res.status(200).json({ success: true, message: "books", data: result });
+    res.status(200).json({ success: true, message: "books", pageInfo: pageData, data: result });
   } catch (error) {
     console.log(error);
   }
 };
 
 exports.getMyBooks = async (req, res) => {
-  const { page } = req.query;
+  const { page, bookQt } = req.query;
   const { title, genre, year, author } = req.body;
   const { userId } = req.user;
 
-  const booksPerPage = 6;
+  const booksPerPage = Number(bookQt) ?? 8;
 
   try {
     let pageNum = 0;
-    if (page <= 1) {
+    if (page <= 1 || page == undefined) {
       pageNum = 0;
     } else {
       pageNum = page - 1;
@@ -106,6 +114,8 @@ exports.getMyBooks = async (req, res) => {
       filter.author = { $regex: author, $options: "i" };
     }
 
+    const totalBooks = await Book.countDocuments();
+
     const result = await Book.find({ userId, ...filter })
       .sort({ createdAt: -1 })
       .skip(pageNum * booksPerPage)
@@ -115,7 +125,13 @@ exports.getMyBooks = async (req, res) => {
         select: ["email", "username"],
       });
 
-    res.status(200).json({ success: true, message: "books", data: result });
+    const pageData = {
+      currentPage: pageNum + 1,
+      totalPages: Math.ceil(totalBooks / booksPerPage),
+      totalBooks: totalBooks
+    }
+
+    res.status(200).json({ success: true, message: "books", pageInfo: pageData, data: result });
   } catch (error) {
     console.log(error);
   }
