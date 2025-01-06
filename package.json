@@ -5,7 +5,6 @@
   "scripts": {
     "start": "node --env-file=.env index.js",
     "dev": "node --watch --trace-warnings --env-file=.env index.js"
-
   },
   "author": "Albieri Garcia",
   "license": "ISC",
@@ -17,6 +16,7 @@
     "express": "^4.21.1",
     "helmet": "^8.0.0",
     "joi": "^17.13.3",
+    "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.3",
     "nodemailer": "^6.9.16"

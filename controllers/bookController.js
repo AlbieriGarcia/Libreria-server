@@ -1,8 +1,7 @@
 const Book = require("../models/booksModel");
 const mongoose = require("mongoose");
-const {
-  insertBookSchema,
-} = require("../middlewares/validator");
+const { insertBookSchema } = require("../middlewares/validator");
+const CsvParser = require("json2csv").Parser;
 
 exports.getBooks = async (req, res) => {
   const { page, bookQt } = req.query;
@@ -40,24 +39,38 @@ exports.getBooks = async (req, res) => {
     const totalBooks = await Book.countDocuments();
 
     const books = await Book.aggregate([
-      { $match: filter }, 
-      { $sort: { createdAt: -1 } }, 
+      { $match: filter },
+      { $sort: { createdAt: -1 } },
       { $skip: pageNum * booksPerPage },
       { $limit: booksPerPage },
       {
         $lookup: {
-          from: "favorites", 
+          from: "favorites",
           let: { bookId: "$_id" },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ["$bookId", "$$bookId"] }, { $eq: ["$userId", mongoose.Types.ObjectId.createFromHexString(userId)] }] } } },
-            { $project: { _id: 1, isFavorite: 1, bookId: 1 } }, 
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$bookId", "$$bookId"] },
+                    {
+                      $eq: [
+                        "$userId",
+                        mongoose.Types.ObjectId.createFromHexString(userId),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            { $project: { _id: 1, isFavorite: 1, bookId: 1 } },
           ],
-          as: "favorite", 
+          as: "favorite",
         },
       },
       {
         $unwind: {
-          path: "$favorite", 
+          path: "$favorite",
           preserveNullAndEmptyArrays: true, // Permite que el valor sea null si no existe favorito
         },
       },
@@ -71,11 +84,15 @@ exports.getBooks = async (req, res) => {
     const pageData = {
       currentPage: pageNum + 1,
       totalPages: Math.ceil(totalBooks / booksPerPage),
-      totalBooks: totalBooks
-    }
-    
+      totalBooks: totalBooks,
+    };
 
-    res.status(200).json({ success: true, message: "books", pageInfo: pageData, data: result });
+    res.status(200).json({
+      success: true,
+      message: "books",
+      pageInfo: pageData,
+      data: result,
+    });
   } catch (error) {
     console.log(error);
   }
@@ -128,10 +145,15 @@ exports.getMyBooks = async (req, res) => {
     const pageData = {
       currentPage: pageNum + 1,
       totalPages: Math.ceil(totalBooks / booksPerPage),
-      totalBooks: totalBooks
-    }
+      totalBooks: totalBooks,
+    };
 
-    res.status(200).json({ success: true, message: "books", pageInfo: pageData, data: result });
+    res.status(200).json({
+      success: true,
+      message: "books",
+      pageInfo: pageData,
+      data: result,
+    });
   } catch (error) {
     console.log(error);
   }
@@ -193,8 +215,7 @@ exports.getYears = async (req, res) => {
 };
 
 exports.insertBook = async (req, res) => {
-  const { title, descripcion, author, year, genre, coverImage } =
-    req.body;
+  const { title, descripcion, author, year, genre, coverImage } = req.body;
 
   const { userId } = req.user;
 
@@ -239,8 +260,7 @@ exports.insertBook = async (req, res) => {
 exports.updateBook = async (req, res) => {
   const { _id } = req.query;
 
-  const { title, descripcion, author, year, genre, coverImage } =
-    req.body;
+  const { title, descripcion, author, year, genre, coverImage } = req.body;
 
   const { userId } = req.user;
 
@@ -322,6 +342,190 @@ exports.deleteBook = async (req, res) => {
       success: true,
       message: "Libro Eliminado",
     });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.getExportCsvBook = async (req, res) => {
+  const { page, bookQt } = req.query;
+  const { title, genre, year, author, getAll } = req.body;
+  const { userId } = req.user;
+
+  const booksPerPage = Number(bookQt) ?? 8;
+
+  try {
+    let pageNum = 0;
+    if (page <= 1 || page == undefined) {
+      pageNum = 0;
+    } else {
+      pageNum = page - 1;
+    }
+
+    const filter = {};
+
+    if (title) {
+      filter.title = { $regex: title, $options: "i" };
+    }
+
+    if (genre) {
+      filter.genre = { $regex: genre, $options: "i" };
+    }
+
+    if (year) {
+      filter.year = year;
+    }
+
+    if (author) {
+      filter.author = { $regex: author, $options: "i" };
+    }
+
+    let books;
+
+    if (!getAll) {
+      books = await Book.aggregate([
+        { $match: filter },
+        { $sort: { createdAt: -1 } },
+        { $skip: pageNum * booksPerPage },
+        { $limit: booksPerPage },
+        {
+          $lookup: {
+            from: "favorites",
+            let: { bookId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$bookId", "$$bookId"] },
+                      {
+                        $eq: [
+                          "$userId",
+                          mongoose.Types.ObjectId.createFromHexString(userId),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+              { $project: { _id: 1, isFavorite: 1, bookId: 1 } },
+            ],
+            as: "favorite",
+          },
+        },
+        {
+          $unwind: {
+            path: "$favorite",
+            preserveNullAndEmptyArrays: true, // Permite que el valor sea null si no existe favorito
+          },
+        },
+      ]);
+    } else {
+      books = await Book.aggregate([
+        {
+          $lookup: {
+            from: "favorites",
+            let: { bookId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$bookId", "$$bookId"] },
+                      {
+                        $eq: [
+                          "$userId",
+                          mongoose.Types.ObjectId.createFromHexString(userId),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+              { $project: { _id: 1, isFavorite: 1, bookId: 1 } },
+            ],
+            as: "favorite",
+          },
+        },
+        {
+          $unwind: {
+            path: "$favorite",
+            preserveNullAndEmptyArrays: true, // Permite que el valor sea null si no existe favorito
+          },
+        },
+      ]);
+    }
+
+    const result = await Book.populate(books, {
+      path: "userId",
+      select: ["email", "username"],
+    });
+
+    let booksData = [];
+
+    result.forEach((book) => {
+      const {
+        _id,
+        title,
+        descripcion,
+        author,
+        year,
+        genre,
+        coverImage,
+        rating,
+        createdAt,
+        updatedAt,
+      } = book;
+      const { username, email } = book.userId;
+
+      let isFavorite = false;
+
+      if (book.favorite) {
+        isFavorite = book.favorite.isFavorite;
+      }
+
+      booksData.push({
+        "Book ID": _id,
+        Title: title,
+        Descripcion: descripcion,
+        Author: author,
+        Year: year,
+        Genre: genre[0],
+        "Image Url": coverImage,
+        Rating: rating,
+        "Created Date": createdAt,
+        "Upadated Date": updatedAt,
+        Username: username,
+        Email: email,
+        "Is Favorite": isFavorite,
+      });
+    });
+
+    const csvFields = [
+      "Book ID",
+      "Title",
+      "Descripcion",
+      "Author",
+      "Year",
+      "Genre",
+      "Image Url",
+      "Rating",
+      "Created Date",
+      "Upadated Date",
+      "Username",
+      "Email",
+      "Is Favorite",
+    ];
+
+    const csvParser = new CsvParser({ csvFields });
+    const csvData = csvParser.parse(booksData);
+
+    const csvDataWithBom = "\uFEFF" + csvData;
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attatchment: filename=booksData.csv");
+
+    res.status(200).end(csvDataWithBom);
   } catch (error) {
     console.log(error);
   }

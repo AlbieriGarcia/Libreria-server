@@ -13,4 +13,7 @@ router.post("/insertBook", identifier, bookController.insertBook);
 router.put("/updateBook", identifier, bookController.updateBook);
 router.delete("/deleteBook", identifier, bookController.deleteBook);
 
+// export file
+router.post("/getExportCsvBook", identifier, bookController.getExportCsvBook);
+
 module.exports = router;
